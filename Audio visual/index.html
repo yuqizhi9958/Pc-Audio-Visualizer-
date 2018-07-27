@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #canvas {
+            display: block;
+            background:linear-gradient(
+                135deg,
+                rgb(142,132,133)0%,
+                rgb(230,132,110)100%
+            );
+        }
+        audio {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            margin-left: -150px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- <h1></h1> -->
+    <canvas id="canvas"></canvas>
+    <audio id="audio" controls="controls" autoplay src="./audio/1.mp3"></audio>
+    <script>
+        //获取dom
+        var oAudio = document.querySelector('#audio');
+
+        //创建音频上下文
+        var oCtx = new AudioContext();
+
+        //创建媒体源,通过当前的octx提供的方法进行媒体源的操作
+        var audioSrc = oCtx.createMediaElementSource(oAudio);
+
+        //创建分析机(加工机制)，进行音频加工处理
+        var analyser = oCtx.createAnalyser();
+
+        //数据通信
+        //媒体源分析机连接
+        audioSrc.connect(analyser);
+
+        // 输出的目的地
+        analyser.connect(oCtx.destination);
+        
+        //配置canvas绘图  渐变进行音频绘制
+        var cCtx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        var oW = canvas.width;
+        var oH = canvas.height;
+        var color = cCtx.createLinearGradient(oW / 2,oH / 2 -30,oW / 2,oH / 2-80);
+        color.addColorStop(0,'#000');
+        color.addColorStop(.5,'#069');
+        color.addColorStop(1,'#f6f');
+        /*
+            数据可视化的处理
+                原理：fftSize   绘制音频的条数
+                作用：分析音频的数据去获取音频频次来决定音频图的样式。默认值：2048
+            Uint8Array: 音频频次等长的8位无符号字节数组
+        */
+       var count = 50;//音频绘制的条数
+       //缓冲区：进行数据的缓冲处理。读取fftSize的值 ，转换成2进制
+       var vocieHeight = new Uint8Array(analyser.frequencyBinCount);
+       //数据的绘制
+       function draw(){
+           //得到缓冲区的数据，解析复制传入到无符号字节数组，做到实时连接
+            analyser.getByteFrequencyData(vocieHeight);
+            // console.log(vocieHeight);
+            //数据渲染
+            //组件定义获取数组里面数据的频步
+            var step = Math.round(vocieHeight.length/count);
+            cCtx.clearRect(0,0,oW,oH);
+            for(var i=0;i<count;i++){
+                //得到每一个频次数据
+                var audioData = vocieHeight[step * i];
+                cCtx.fillStyle = color;
+                cCtx.fillRect(oW/2+(i*30),oH/2,25,-audioData);
+                cCtx.fillRect(oW/2-(i*30),oH/2,25,-audioData);
+            };
+
+       }
+       setInterval(draw,50);
+    </script>
+    <!-- 
+        需求分析
+            可视化载体：  canvas
+                1. 简单方便
+                2. 提升页面的加载效率
+                3. 数据可视化（html5 ，大数据）
+                4. 游戏 （webgl  three.js）
+                5. 动效
+
+            实现的逻辑
+                1.创建音频对象上下文   h5提供的接口
+                2.在上下文中，创建源对象<audio>
+                3.创建效果节点， 音频条，混响，3d环绕
+                4.选择音频效果的最终目的地（扬声器，耳机）
+                5.1234 是一个流程，流程步骤是需要连接
+                6.数据可视化的处理
+                    音频条：
+                        得到的数据把它转换成线条的高度
+                        Unit8Array里面的数据绘制一个矩形
+                                            用渐变色  fillrect
+            实现的技术：
+                canvas的绘图
+                html5的音频操作 稍微有难度
+
+
+     -->
+</body>
+</html>
